@@ -1,0 +1,7 @@
+# Ignoring directories
+brouillon/
+
+# Ignore files called
+cert.pem
+key.pem
+package-lock.json
