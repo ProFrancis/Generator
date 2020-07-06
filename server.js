@@ -1,19 +1,21 @@
 const http = require('http'),
-      fs = require('fs')
+      fs = require('fs'),
+      url = 'public/index.html',
+      password = "aaaaaa"
 
 const options = {
-  key: fs.readFileSync('key.pem'),
-  cert: fs.readFileSync('cert.pem'),
-  passphrase: 'aaaaaa'
+  key: fs.readFileSync('pem/key.pem'),
+  cert: fs.readFileSync('pem/cert.pem'),
+  passphrase: password
 }
 
 const app = http.createServer(options, (req, res) => {
-  fs.readFile('index.html' , (err, data) => {
+  fs.readFile(url, (err, data) => {
     if(err) {
       res.writeHead(404)
       console.log("something went wong :( ")
     }else{
-      res.writeHead(200, {'Content-Type': 'text/plain'})
+      res.writeHead(200, {'Content-Type': 'text:html'})
       res.write(data)
     }
     res.end()
