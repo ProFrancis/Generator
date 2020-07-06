@@ -1,14 +1,29 @@
-const http = require('http')
+const http = require('http'),
+      fs = require('fs')
 
-const hostname = '127.0.0.1'
-const port = 3000
+const options = {
+  key: fs.readFileSync('key.pem'),
+  cert: fs.readFileSync('cert.pem'),
+  passphrase: 'aaaaaa'
+}
 
-const server = http.createServer((req, res) => {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/plain')
-    res.end('./index.html'); 
+const app = http.createServer(options, (req, res) => {
+  fs.readFile('index.html' , (err, data) => {
+    if(err) {
+      res.writeHead(404)
+      console.log("something went wong :( ")
+    }else{
+      res.writeHead(200, {'Content-Type': 'text/plain'})
+      res.write(data)
+    }
+    res.end()
+  })
 })
 
-server.listen(port, hostname, () => {
-    console.log(`Server running at http://${hostname}: ${port}`)
+app.listen(8000, (err) => {
+  if(err){
+    console.log("there is erro ", err)
+  }else{
+    console.log('the server turn on port 8000 !')
+  }
 })
