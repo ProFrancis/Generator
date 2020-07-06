@@ -1,5 +1,7 @@
 # Ignoring directories
-brouillon/
+test/
+pem/
+node_modules/
 
 # Ignore files called
 cert.pem
