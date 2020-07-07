@@ -1,15 +1,18 @@
 const http = require('http'),
+      ejs = require('ejs'),
+      localhost = 'localhost:8080/',
+      pathJson = 'api/api.json',
       fs = require('fs'),
-      url = require("url"),
-      path = require("path"),
-      port = process.argv[2] || 8000,
-      password = "aaaaaa"
+      port = 8080,
+      obj = { members: []},
+      password = "aaaaaa",
+      { parse } = require('querystring');
 
-var type = {
-  "html": "text/html",
-  "json": "application/json",
-  "js": "text/javascript"
-}
+var dataJson;
+
+ejs.delimiter = '%';
+ejs.openDelimiter = '<';
+ejs.closeDelimiter = '>';
 
 const options = {
   key: fs.readFileSync('pem/key.pem'),
@@ -17,46 +20,83 @@ const options = {
   passphrase: password
 }
 
-const app = http.createServer(options, (req, res) => {
+const server = http.createServer(options, (req, res) => {
 
-  var uri = url.parse(req.url).pathname, 
-      file = path.join(process.cwd(), uri);
+  if (req.method === 'POST') {
+    collectRequestData(req, data => {
+      console.log('DATA => ')
+      console.log(data)
 
-  fs.exists(file, function(exists) {
-    if(!exists) {
-      res.writeHead(404, { "Content-Type": "text/plain" });
-      res.write("404 Not Found\n");
-      res.end();
-      return;
-    }
+      obj.members.push(data)
+      result = JSON.stringify(obj)
 
-    if (fs.statSync(file).isDirectory())
-      file += 'public/index.html'
+      fs.writeFile(pathJson, result, (err) => {
+        
+        if (err) throw err;
+        console.log('the file has been saved!')
 
-  fs.readFile(file, "binary", (err, data) => {
-    if(err) {
-      res.writeHead(404, { "Content-Type":"text/plain"})
-      res.write(err + "\n")
-      res.end()
-      return;
-    }
+        if(req.url == '/')
+          res.writeHead(301, { "Location": "http://" + localhost});
+          return res.end();
+      })
+    });
+  } 
+  else {
+    dataJson = JSON.parse(fs.readFileSync(pathJson, 'utf-8'))
+    res.end(
+      ejs.render(
+        `
+          <!doctype html>
+          <html>
+            <body>
+              <h1><%= title %></h1>
+              <ul>
+                <% state.forEach(function(membre) { %> 
+                  <li><%= membre.name %></li>
+                <% }) %>
+              </ul>
+              <form action="/" method="POST">
+              <input type="text" name="name"/>
+              <button>Save</button>
+            </form>
+            </body>
+          </html>
+        `,{
+          state: dataJson.members, 
+          title: "Generator"
+        }
+      )
+    );
+  }
+});
 
-    var allType = type[file.split('.').pop()]
-
-    if(!allType)
-      allType = 'text/plain'
-
-    res.writeHead(200, { "Content-Type" : allType })
-    res.write(data, "binary")
-    res.end()
-    })
-  });
-})
-
-app.listen(port, (err) => {
+server.listen(port, (err) => {
   if(err){
     console.log("there is erro ", err)
   }else{
     console.log('the server turn on port => http://localhost:' + port + "/\nCTRL + C to stop server ")
   }
 })
+
+function collectRequestData(request, callback) {
+    const FORM_URLENCODED = 'application/x-www-form-urlencoded';
+    console.log("REQUEST HEADERS => ")
+    console.log(request.headers['content-type']);
+    
+    if(request.headers['content-type'] === FORM_URLENCODED) {
+        let body = '';
+        request.on('data', chunk => {
+            body += chunk.toString();
+            console.log('CHUNK => ')
+            console.log(chunk)
+        });
+        request.on('end', () => {
+            console.log('BODY => ')
+            console.log(body)
+            callback(parse(body));
+        });
+    }
+    else {
+        callback(null);
+    }
+}
