@@ -4,9 +4,10 @@ const http = require('http'),
       pathJson = 'api/api.json',
       fs = require('fs'),
       port = 8080,
-      obj = { members: []},
+      obj = [],
       password = "aaaaaa",
       { parse } = require('querystring');
+
 
 var dataJson;
 
@@ -24,10 +25,20 @@ const server = http.createServer(options, (req, res) => {
 
   if (req.method === 'POST') {
     collectRequestData(req, data => {
-      console.log('DATA => ')
-      console.log(data)
 
-      obj.members.push(data)
+      if(data.name){
+        obj.push({
+          name: data.name,
+          techno: null
+        })
+      }
+
+      if(data.techno){
+        var randomMembre = obj[Math.floor(Math.random() * obj.length)];
+        randomMembre.techno = data.techno
+        console.log("TECHNO STRING")
+      }
+
       result = JSON.stringify(obj)
 
       fs.writeFile(pathJson, result, (err) => {
@@ -36,7 +47,7 @@ const server = http.createServer(options, (req, res) => {
         console.log('the file has been saved!')
 
         if(req.url == '/')
-          res.writeHead(301, { "Location": "http://" + localhost});
+          res.writeHead(301, { "Location" : "http://" + localhost});
           return res.end();
       })
     });
@@ -47,22 +58,44 @@ const server = http.createServer(options, (req, res) => {
       ejs.render(
         `
           <!doctype html>
+          <head>
+          <style>
+            .barre{
+              text-decoration: line-through;
+            }
+          </style>
+          </hea>
           <html>
             <body>
               <h1><%= title %></h1>
               <ul>
                 <% state.forEach(function(membre) { %> 
-                  <li><%= membre.name %></li>
+                  <%if(membre.techno != null) { %>
+                    <li class="barre" ><%= membre.name %></li>
+                  <% }else{  %>
+                    <li ><%= membre.name %></li>
+                      <% } %>
                 <% }) %>
               </ul>
               <form action="/" method="POST">
-              <input type="text" name="name"/>
-              <button>Save</button>
-            </form>
+                <input type="text" name="name"/>
+                <button>Save</button>
+              </form>
+              <ul>
+              <% state.forEach(function(membre) { %> 
+                <%if(membre.techno != null) { %>
+                  <li><%= membre.name %> - <%= membre.techno %></li>
+                <% } %>
+              <% }) %>
+            </ul>
+              <form action="/" method="POST">
+                <input type="text" name="techno"/>
+                <button>Save</button>
+              </form>
             </body>
           </html>
         `,{
-          state: dataJson.members, 
+          state: dataJson, 
           title: "Generator"
         }
       )
@@ -87,12 +120,8 @@ function collectRequestData(request, callback) {
         let body = '';
         request.on('data', chunk => {
             body += chunk.toString();
-            console.log('CHUNK => ')
-            console.log(chunk)
         });
         request.on('end', () => {
-            console.log('BODY => ')
-            console.log(body)
             callback(parse(body));
         });
     }
