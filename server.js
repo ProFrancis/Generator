@@ -9,7 +9,10 @@ const http = require('http'),
       { parse } = require('querystring');
 
 
-var dataJson;
+var dataJson,
+    err = false,
+    sucess
+    
 
 ejs.delimiter = '%';
 ejs.openDelimiter = '<';
@@ -25,27 +28,32 @@ const server = http.createServer(options, (req, res) => {
 
   if (req.method === 'POST') {
     collectRequestData(req, data => {
+  
+      const reg = new RegExp(/^\d+$/)
+      const test = reg.test(data.name)
 
-      if(data.name){
+      if(data.name && test === false){
         obj.push({
           name: data.name,
           techno: null
         })
+        err = false
+      }else{
+        err = "Le name doit être un string"
       }
 
-      if(data.techno){
+      if(data.techno && test === false){
         var randomMembre = obj[Math.floor(Math.random() * obj.length)];
         randomMembre.techno = data.techno
-        console.log("TECHNO STRING")
+        sucess = "TECHNO STRING"
+        err = false
+      }else {
+        err = "Techno doit etre un string"
       }
 
       result = JSON.stringify(obj)
 
       fs.writeFile(pathJson, result, (err) => {
-        
-        if (err) throw err;
-        console.log('the file has been saved!')
-
         if(req.url == '/')
           res.writeHead(301, { "Location" : "http://" + localhost});
           return res.end();
@@ -88,6 +96,9 @@ const server = http.createServer(options, (req, res) => {
                 <% } %>
               <% }) %>
             </ul>
+            <% if(err !== false) { %> 
+              <p><%= err %></p>
+              <% } %>
               <form action="/" method="POST">
                 <input type="text" name="techno"/>
                 <button>Save</button>
@@ -96,7 +107,8 @@ const server = http.createServer(options, (req, res) => {
           </html>
         `,{
           state: dataJson, 
-          title: "Generator"
+          title: "Generator",
+          err: err,
         }
       )
     );
@@ -110,6 +122,17 @@ server.listen(port, (err) => {
     console.log('the server turn on port => http://localhost:' + port + "/\nCTRL + C to stop server ")
   }
 })
+
+addVielle = (data, test ) => {
+  if(data && test === false){
+    var randomMembre = obj[Math.floor(Math.random() * obj.length)];
+    randomMembre.techno = data.techno
+    sucess = "TECHNO STRING"
+    err = false
+  }else {
+    err = "Techno doit etre un string"
+  }
+}
 
 function collectRequestData(request, callback) {
     const FORM_URLENCODED = 'application/x-www-form-urlencoded';
